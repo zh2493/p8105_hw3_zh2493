@@ -76,3 +76,14 @@ table2 = bind_rows(list(Pink_Lady_Apples, Coffee_Ice_Cream)) %>%
 ``` 
 
 the mean hour of the day at which Pink Lady Apples are ordered from Sunday to Saturday are 13.44118, 11.36000, 11.70213, 14.25000, 11.55172, 12.78431, 11.93750 and the mean hour of the day at which Coffee Ice Cream are ordered from Sunday to Saturday are 13.77419, 14.31579, 15.38095, 15.31818, 15.21739, 12.26316, 13.83333
+
+## Problem2
+
+### do some data cleaning
+```{r}
+data("brfss_smart2010")
+brfss = brfss_smart2010 %>% 
+  janitor::clean_names() %>%
+  filter(topic == "Overall Health", response %in% c("Excellent", "Very good", "Good", "Fair", "Poor"))
+```
+
