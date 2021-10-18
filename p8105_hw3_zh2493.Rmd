@@ -1,0 +1,78 @@
+---
+title: "hw2_zh2493"
+author: "Ziqian"
+date: "2021/10/4"
+output: github_document
+---
+```{r message = FALSE}
+library(tidyverse)
+library(dplyr)
+library(p8105.datasets)
+data("instacart")
+```
+
+## Problem 1
+
+### Q1
+```{r message = FALSE}
+instacart_aisle = data.frame(table(pull(instacart, aisle)))
+colnames(instacart_aisle) = c('aisle', 'number')
+arrange(instacart_aisle, desc(number))
+```
+
+There are 134 aisles and the most items is fresh vegetables.
+
+### Q2
+```{r message = FALSE}
+instacart_aisle %>% 
+  filter(number > 10000) %>% 
+  ggplot(aes(x = aisle, y = number)) +
+  geom_point() +
+  labs(title = "the number of items ordered in each aisle") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1))
+```
+
+like the plot itself. it shows the number of items ordered in each aisle which are more than 10000 items ordered.
+
+### Q3
+```{r message = FALSE}
+baking = filter(instacart, aisle == "baking ingredients") %>% 
+  group_by(product_name) %>% 
+  summarize(n_obs = n()) %>% 
+  arrange(desc(n_obs))
+baking = baking[1:3, ]
+
+dog = filter(instacart, aisle == "dog food care") %>% 
+  group_by(product_name) %>% 
+  summarize(n_obs = n()) %>% 
+  arrange(desc(n_obs))
+dog = dog[1:3, ]
+
+pack = filter(instacart, aisle == "packaged vegetables fruits") %>% 
+  group_by(product_name) %>% 
+  summarize(n_obs = n()) %>% 
+  arrange(desc(n_obs))
+pack = pack[1:3, ]
+
+table1 = bind_rows(list(baking, dog, pack))
+```
+ 
+the three most popular items and the order number in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits” are Light Brown Sugar, 499, Pure Baking Soda, 387, Cane Sugar, 336, Snack Sticks Chicken & Rice Recipe Dog Treats, 30, Organix Chicken & Brown Rice Recipe, 28, Small Dog Biscuits, 26, Organic Baby Spinach, 9784, Organic Raspberries, 5546,Organic Blueberries,4966.
+
+### Q4
+```{r message = FALSE}
+Pink_Lady_Apples = filter(instacart, product_name == "Pink Lady Apples") %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(order_hour_of_day = mean(order_hour_of_day))
+
+Coffee_Ice_Cream = filter(instacart, product_name == "Coffee Ice Cream") %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(order_hour_of_day = mean(order_hour_of_day))
+
+table2 = bind_rows(list(Pink_Lady_Apples, Coffee_Ice_Cream)) %>% 
+  mutate(order_dow = recode(order_dow, "0" = "Sunday", "1" = "Monday", "2"  = "Tuesday", "3" = "Wednesday", "4" = "Thursday", "5" = "Friday", "6" = "Saturday")) %>% 
+  pivot_wider(names_from = order_dow, values_from = order_hour_of_day) 
+
+``` 
+
+the mean hour of the day at which Pink Lady Apples are ordered from Sunday to Saturday are 13.44118, 11.36000, 11.70213, 14.25000, 11.55172, 12.78431, 11.93750 and the mean hour of the day at which Coffee Ice Cream are ordered from Sunday to Saturday are 13.77419, 14.31579, 15.38095, 15.31818, 15.21739, 12.26316, 13.83333
