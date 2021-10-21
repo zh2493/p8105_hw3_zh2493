@@ -8,16 +8,19 @@ output: github_document
 library(tidyverse)
 library(dplyr)
 library(p8105.datasets)
-data("instacart")
+library(ggplot2)
 ```
 
 ## Problem 1
 
 ### Q1
 ```{r message = FALSE}
+data("instacart")
 instacart_aisle = data.frame(table(pull(instacart, aisle)))
 colnames(instacart_aisle) = c('aisle', 'number')
-arrange(instacart_aisle, desc(number))
+arrange(instacart_aisle, desc(number)) %>%
+  head() %>% 
+  knitr::kable()
 ```
 
 There are 134 aisles and the most items is fresh vegetables.
@@ -26,6 +29,7 @@ There are 134 aisles and the most items is fresh vegetables.
 ```{r message = FALSE}
 instacart_aisle %>% 
   filter(number > 10000) %>% 
+  arrange(number) %>% 
   ggplot(aes(x = aisle, y = number)) +
   geom_point() +
   labs(title = "the number of items ordered in each aisle") +
@@ -54,7 +58,7 @@ pack = filter(instacart, aisle == "packaged vegetables fruits") %>%
   arrange(desc(n_obs))
 pack = pack[1:3, ]
 
-table1 = bind_rows(list(baking, dog, pack))
+table1 = bind_rows(baking, dog, pack)
 ```
  
 the three most popular items and the order number in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits” are Light Brown Sugar, 499, Pure Baking Soda, 387, Cane Sugar, 336, Snack Sticks Chicken & Rice Recipe Dog Treats, 30, Organix Chicken & Brown Rice Recipe, 28, Small Dog Biscuits, 26, Organic Baby Spinach, 9784, Organic Raspberries, 5546,Organic Blueberries,4966.
@@ -80,10 +84,112 @@ the mean hour of the day at which Pink Lady Apples are ordered from Sunday to Sa
 ## Problem2
 
 ### do some data cleaning
-```{r}
+```{r warning = FALSE}
 data("brfss_smart2010")
 brfss = brfss_smart2010 %>% 
   janitor::clean_names() %>%
-  filter(topic == "Overall Health", response %in% c("Excellent", "Very good", "Good", "Fair", "Poor"))
+  filter(topic == "Overall Health", response %in% c("Excellent", "Very good", "Good", "Fair", "Poor")) %>% 
+  mutate(response = ordered(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent")))
 ```
 
+### do or answer
+```{r message = FALSE}
+state2002 = 
+  brfss %>% 
+  filter(year == "2002") %>% 
+  group_by(locationabbr, locationdesc) %>% 
+  summarize(n_obs = n()) %>% 
+  summarize(n_obs = n()) %>% 
+  filter(n_obs >= 7)
+
+state2010 = 
+  brfss %>% 
+  filter(year == "2010") %>% 
+  group_by(locationabbr, locationdesc) %>% 
+  summarize(n_obs = n()) %>% 
+  summarize(n_obs = n()) %>% 
+  filter(n_obs >= 7)
+```
+
+In 2002, CT, FL, MA, NC, NJ, PA states were observed at 7 or more locations. in 2010, CA,CO,FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TX, WA were observed at 7 or more locations.
+
+```{r message = FALSE}
+dataset1 = 
+  brfss %>% 
+  filter(response == "Excellent") %>% 
+  group_by(locationabbr, year) %>% 
+  summarize(averages = mean(data_value))
+
+ggplot(data=dataset1, aes(x=year, y=averages, group=locationabbr)) +
+    geom_line(aes(color=locationabbr)) +
+    geom_point(aes(color=locationabbr))
+```
+
+like the plot itself. with 443 variables. the spaghetti shows the average value over time within a state.
+
+```{r message = FALSE}
+ny = 
+  brfss %>% 
+  filter(locationabbr == "NY", year %in% c("2006", "2010")) %>%
+  group_by(response) %>% 
+  select(locationabbr, response, data_value, year)
+
+ny %>% 
+  ggplot(aes(x = response, y = data_value, fill = response)) +
+  geom_boxplot(alpha = .5) +
+  facet_grid(. ~ year) +
+  labs(
+    x = "Response",
+    y = "data_value",
+    title = "distribution of data value for responses among locations in NY"
+  )
+
+```
+the boxplot show the distribution of 75 observations in 2006 and 2010.
+
+## P3
+
+### tidy, and otherwise wrangle the data
+
+```{r message = FALSE}
+data1 = 
+  read.csv("./data/accel_data.csv") %>% 
+  janitor::clean_names() %>%
+  mutate(date = ifelse(day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "weekday", "weekend")) %>% 
+  relocate(week, date, day_id)
+
+```
+
+this data includes 35 observations and the includes `r ncol(data1)` variables with week, date, day_id, day and activity1-activity1440
+
+```{r}
+data2 = 
+  data1 %>% 
+  pivot_longer(cols = starts_with("activity"), names_to = "ac_name", values_to = "ac_day") %>% 
+  group_by(date, day_id, week) %>% 
+  summarize(ac_count = sum(ac_day))
+
+head(data2) %>% 
+  knitr::kable()
+```
+
+the ac_count shows the total activity over a day and there are 35 days.
+
+```{r}
+data3 = 
+  data1 %>% 
+  pivot_longer(cols = starts_with("activity"), names_to = "minute", names_prefix = 'activity_', values_to = "ac_day") %>% 
+  mutate(minute = as.numeric(minute)) 
+
+data3 %>% 
+  ggplot(aes(x = minute, y = ac_day)) +
+  geom_point(aes(color = day, alpha = .1)) +
+  scale_x_continuous(
+  breaks = c(seq(from = 0, to = 1440, by = 120)),
+  labels = c(seq(from = 0, to = 1440, by = 120)
+)) +
+  labs(title = "24-hour activity time courses for each day"
+  )
+```
+
+the graph shows that the people's activity times in everyday and during the weekend, he is more active.
